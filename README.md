@@ -18,10 +18,10 @@ translate words
 ```
 你将得到以下输出：
 ```batch
-pronounce:
+pronunciation:
 英 [wɜːdz]
 美 [wɝdz]
-mean:
+meaning:
 n. [计] 字（word的复数）；话语；言语
 v. 用言语表达（word的三单形式）
 ```

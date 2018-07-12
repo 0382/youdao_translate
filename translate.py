@@ -46,13 +46,13 @@ def youdao_translate(words):
 
 def print_translate(translate):
     if 'pronounce' in translate.keys():
-        print('pronounce:')
+        print('pronunciation:')
         for item in translate['pronounce'].items():
             print(item[0], item[1])
     if 'original' not in translate.keys():
         print('翻译失败')
         exit()
-    print('mean:')
+    print('meaning:')
     for li in translate['original']:
         print(li)
     if 'additional' in translate.keys():
