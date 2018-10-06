@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # author: 0.382
 # environment: win64 python3.7
+# description: 通过爬虫在命令行英汉互译
 # ----------------------------
 
 from urllib import request
+from urllib import parse
 import codecs
 from bs4 import BeautifulSoup
 import sys
 import re
 
-def youdao_translate(words):
+#判断输入是否为英文
+English_chars = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def isenglish(words):
+    return not False in map(lambda x: x in English_chars, words)
+
+#英译汉
+def youdao_en_to_ch(words):
     youdao_URL = 'http://dict.youdao.com/w/{0}/#keyfrom=dict2.top'.format(words)
     response = request.urlopen(youdao_URL)
     html = response.read().decode('utf-8')
-    soup = BeautifulSoup(html, 'html5lib')
+    soup = BeautifulSoup(html, 'html5lib')     # 后一个是html解析器，常用为lxml，不过安装了jupyter就有html5lib，lxml也不好安装
     
     translate = {}
     pronounce_search = soup.find_all('span', class_ = 'pronounce')
@@ -22,13 +32,13 @@ def youdao_translate(words):
         for p in pronounce_search:
             p_key, p_value = p.stripped_strings
             pronounce[p_key] = p_value
-        if pronounce != {}:
+        if pronounce is not {}:
             translate['pronounce'] = pronounce
     except Exception as error:
         pass
     
     mean_search = soup.find('div', class_='trans-container')
-    if mean_search != None:
+    if mean_search is not None:
         original_mean_search = mean_search.find_all('li')
         additional_mean_search = mean_search.find('p')
         original = []
@@ -44,13 +54,48 @@ def youdao_translate(words):
     
     return translate
 
-def print_translate(translate):
+# 汉译英
+def youdao_ch_to_en(words):
+    urlwords = parse.urlencode({'':words})[1:]
+    youdao_URL = 'http://dict.youdao.com/w/{0}/#keyfrom=dict2.top'.format(urlwords)
+    response = request.urlopen(youdao_URL)
+    html = response.read().decode('utf-8')
+    soup = BeautifulSoup(html, 'html5lib')
+    
+    translate = {}
+    wordGroups = soup.find_all('p', class_ = 'wordGroup')
+    for wordgroup in wordGroups:
+        wordtype = wordgroup.find('span')
+        if wordtype is None:
+            break
+        elif isinstance(wordtype.contents[0], str):
+            contentTitle = []
+            content_search = wordgroup.find_all('a', class_ = 'search-js')
+            for c in content_search:
+                contentTitle.append(c.contents[0])
+            translate[wordtype.contents[0]] = contentTitle
+        else:
+            contentTitle = []
+            content_search = wordgroup.find_all('a')
+            for c in content_search:
+                if c['href'].endswith('E2Ctranslation'):
+                    contentTitle.append(c.contents[0])
+            if contentTitle != []:
+                if 'other.' in translate.keys():
+                    translate['other.'] += contentTitle
+                else:
+                    translate['other.'] = contentTitle
+    return translate
+    
+    
+# 打印英译汉结果
+def print_en_to_ch(translate):
     if 'pronounce' in translate.keys():
         print('pronunciation:')
         for item in translate['pronounce'].items():
             print(item[0], item[1])
     if 'original' not in translate.keys():
-        print('翻译失败')
+        print('Fail to translate!')
         exit()
     print('meaning:')
     for li in translate['original']:
@@ -58,12 +103,27 @@ def print_translate(translate):
     if 'additional' in translate.keys():
         print('other:')
         print(translate['additional'])
-    
-if __name__ == '__main__':
+
+# 打印汉译英结果
+def print_ch_to_en(translate):
+    for wordtype in translate.keys():
+        print('{0} {1}'.format(wordtype, '; '.join(translate[wordtype])))
+
+def translate():
+    words = sys.argv[1:]
+    if(len(words) == 0):
+        print("No input!")
+        exit()
     try:
-        words = ' '.join(sys.argv[1:])
-        translate = youdao_translate(words)
-        print_translate(translate)
+        words = ' '.join(words)
+        if isenglish(words):
+            translate = youdao_en_to_ch(words)
+            print_en_to_ch(translate)
+        else:
+            translate = youdao_ch_to_en(words)
+            print_ch_to_en(translate)
     except Exception as error:
         print(error)
-        print('无效输入')
+
+if __name__ == '__main__':
+    translate()
