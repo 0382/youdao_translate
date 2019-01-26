@@ -96,7 +96,7 @@ def print_en_to_ch(translate):
             print(item[0], item[1])
     if 'original' not in translate.keys():
         print('Fail to translate!')
-        exit()
+        return
     print('meaning:')
     for li in translate['original']:
         print(li)
@@ -109,13 +109,11 @@ def print_ch_to_en(translate):
     for wordtype in translate.keys():
         print('{0} {1}'.format(wordtype, '; '.join(translate[wordtype])))
 
-def translate():
-    words = sys.argv[1:]
+def translate(words):
     if(len(words) == 0):
         print("No input!")
-        exit()
+        return
     try:
-        words = ' '.join(words)
         if isenglish(words):
             translate = youdao_en_to_ch(words)
             print_en_to_ch(translate)
@@ -125,5 +123,17 @@ def translate():
     except Exception as error:
         print(error)
 
+def parse_args():
+    args = sys.argv
+    if "-c" in args or "--continue" in args:
+        words = input(">>>")
+        while words != "exit":
+            translate(words)
+            words = input(">>>")
+    else:
+        words = ' '.join(sys.argv[1:])
+        translate(words)
+
+
 if __name__ == '__main__':
-    translate()
+    parse_args()
